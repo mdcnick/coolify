@@ -67,7 +67,7 @@ class SettingsDropdown extends Component
     public function render()
     {
         return view('livewire.settings-dropdown', [
-            'entries' => $this->entries,
+            'entries' => $this->showWhatsNewModal ? $this->entries : collect(),
             'unreadCount' => $this->unreadCount,
             'currentVersion' => $this->currentVersion,
         ]);

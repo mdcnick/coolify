@@ -8,16 +8,20 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Livewire;
 
-it('opens the changelog modal with its entries from the sidebar trigger', function () {
+it('loads changelog entries only while the modal is open', function (string $trigger) {
     $user = new User(['email' => 'test@example.com']);
     $user->id = 1;
 
     Auth::setUser($user);
 
-    app()->instance(ChangelogService::class, new class extends ChangelogService
+    $service = new class extends ChangelogService
     {
+        public int $entryLoads = 0;
+
         public function getEntriesForUser(User $user): Collection
         {
+            $this->entryLoads++;
+
             return collect([
                 (object) [
                     'tag_name' => 'v1.0.0',
@@ -34,13 +38,32 @@ it('opens the changelog modal with its entries from the sidebar trigger', functi
         {
             return 1;
         }
-    });
+    };
+    app()->instance(ChangelogService::class, $service);
 
-    Livewire::test(SettingsDropdown::class, ['trigger' => 'changelog-sidebar'])
-        ->call('openWhatsNewModal')
-        ->assertNotDispatched('whats-new-opened')
+    $component = Livewire::test(SettingsDropdown::class, ['trigger' => $trigger])
+        ->assertSee('1 unread changelog entry')
+        ->assertDontSee('Test Release');
+
+    expect($service->entryLoads)->toBe(0);
+
+    $component->call('openWhatsNewModal')
+        ->assertSet('showWhatsNewModal', true)
         ->assertSee('Test Release');
-});
+
+    expect($service->entryLoads)->toBe(1);
+
+    $component->call('closeWhatsNewModal')
+        ->assertSet('showWhatsNewModal', false)
+        ->assertDontSee('Test Release');
+
+    expect($service->entryLoads)->toBe(1);
+
+    $component->call('openWhatsNewModal')
+        ->assertSee('Test Release');
+
+    expect($service->entryLoads)->toBe(2);
+})->with(['changelog-sidebar', 'account-menu']);
 
 it('opens the changelog modal when there are no entries', function () {
     $user = new User(['email' => 'test@example.com']);

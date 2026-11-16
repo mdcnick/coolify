@@ -1,70 +1,4 @@
-<div x-data="{
-    search: '',
-    allEntries: [],
-    page: 1,
-    perPage: 1,
-    init() {
-        // Load all entries when component initializes
-        this.allEntries = @js($entries->toArray());
-    },
-    markEntryAsRead(tagName) {
-        // Update the entry in our local Alpine data
-        const entry = this.allEntries.find(e => e.tag_name === tagName);
-        if (entry) {
-            entry.is_read = true;
-        }
-        // Call Livewire to update server-side
-        $wire.markAsRead(tagName);
-    },
-    markAllEntriesAsRead() {
-        // Update all entries in our local Alpine data
-        this.allEntries.forEach(entry => {
-            entry.is_read = true;
-        });
-        // Call Livewire to update server-side
-        $wire.markAllAsRead();
-    },
-    get filteredEntries() {
-        let entries = [...this.allEntries];
-
-        // Apply search filter if search term exists
-        if (this.search && this.search.trim() !== '') {
-            const searchLower = this.search.trim().toLowerCase();
-            entries = entries.filter(entry => {
-                return (entry.title?.toLowerCase().includes(searchLower) ||
-                    entry.content?.toLowerCase().includes(searchLower) ||
-                    entry.tag_name?.toLowerCase().includes(searchLower));
-            });
-        }
-
-        // Always sort: unread first, then by published date (newest first)
-        return entries.sort((a, b) => {
-            // First sort by read status (unread first)
-            if (a.is_read !== b.is_read) {
-                return a.is_read ? 1 : -1; // unread (false) comes before read (true)
-            }
-            // Then sort by published date (newest first)
-            return new Date(b.published_at) - new Date(a.published_at);
-        });
-    },
-    get paginatedEntries() {
-        const start = (this.page - 1) * this.perPage;
-
-        return this.filteredEntries.slice(start, start + this.perPage);
-    },
-    get lastPage() {
-        return Math.max(1, Math.ceil(this.filteredEntries.length / this.perPage));
-    },
-    get firstVisibleEntry() {
-        return this.filteredEntries.length === 0 ? 0 : ((this.page - 1) * this.perPage) + 1;
-    },
-    get lastVisibleEntry() {
-        return Math.min(this.page * this.perPage, this.filteredEntries.length);
-    },
-    goToPage(page) {
-        this.page = Math.min(Math.max(page, 1), this.lastPage);
-    }
-}" class="{{ in_array($trigger, ['changelog-sidebar', 'account-menu'], true) ? 'w-full' : '' }}">
+<div class="{{ in_array($trigger, ['changelog-sidebar', 'account-menu'], true) ? 'w-full' : '' }}">
     @if ($trigger === 'changelog-sidebar')
         <button wire:click="openWhatsNewModal" type="button" title="What's New" aria-label="What's New"
             class="relative text-left menu-item">
@@ -105,7 +39,74 @@
     <!-- What's New Modal -->
     @if ($showWhatsNewModal)
         <template x-teleport="body">
-            <div class="fixed inset-0 z-[99] flex items-center justify-center p-3 sm:p-6"
+            <div x-data="{
+                search: '',
+                allEntries: [],
+                page: 1,
+                perPage: 1,
+                init() {
+                    // Load all entries when component initializes
+                    this.allEntries = @js($entries->toArray());
+                },
+                markEntryAsRead(tagName) {
+                    // Update the entry in our local Alpine data
+                    const entry = this.allEntries.find(e => e.tag_name === tagName);
+                    if (entry) {
+                        entry.is_read = true;
+                    }
+                    // Call Livewire to update server-side
+                    $wire.markAsRead(tagName);
+                },
+                markAllEntriesAsRead() {
+                    // Update all entries in our local Alpine data
+                    this.allEntries.forEach(entry => {
+                        entry.is_read = true;
+                    });
+                    // Call Livewire to update server-side
+                    $wire.markAllAsRead();
+                },
+                get filteredEntries() {
+                    let entries = [...this.allEntries];
+
+                    // Apply search filter if search term exists
+                    if (this.search && this.search.trim() !== '') {
+                        const searchLower = this.search.trim().toLowerCase();
+                        entries = entries.filter(entry => {
+                            return (entry.title?.toLowerCase().includes(searchLower) ||
+                                entry.content?.toLowerCase().includes(searchLower) ||
+                                entry.tag_name?.toLowerCase().includes(searchLower));
+                        });
+                    }
+
+                    // Always sort: unread first, then by published date (newest first)
+                    return entries.sort((a, b) => {
+                        // First sort by read status (unread first)
+                        if (a.is_read !== b.is_read) {
+                            return a.is_read ? 1 : -1; // unread (false) comes before read (true)
+                        }
+                        // Then sort by published date (newest first)
+                        return new Date(b.published_at) - new Date(a.published_at);
+                    });
+                },
+                get paginatedEntries() {
+                    const start = (this.page - 1) * this.perPage;
+
+                    return this.filteredEntries.slice(start, start + this.perPage);
+                },
+                get lastPage() {
+                    return Math.max(1, Math.ceil(this.filteredEntries.length / this.perPage));
+                },
+                get firstVisibleEntry() {
+                    return this.filteredEntries.length === 0 ? 0 : ((this.page - 1) * this.perPage) + 1;
+                },
+                get lastVisibleEntry() {
+                    return Math.min(this.page * this.perPage, this.filteredEntries.length);
+                },
+                goToPage(page) {
+                    this.page = Math.min(Math.max(page, 1), this.lastPage);
+                }
+            }"
+                class="fixed inset-0 z-[99] flex items-center justify-center p-3 sm:p-6"
                 @keydown.escape.window="$wire.closeWhatsNewModal()">
                 <div class="absolute inset-0 bg-black/55 backdrop-blur-[2px]" wire:click="closeWhatsNewModal"></div>
 
